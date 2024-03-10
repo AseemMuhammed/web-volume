@@ -9,12 +9,16 @@ from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
 app = Flask(__name__)
 
+# Flag to indicate whether to continue video feed
+continue_video_feed = True
+
 @app.route('/')
 def index():
     return render_template('index.html')  # Assuming you have an index.html file in your templates directory
 
 def gen_frames():
-    # Your OpenCV code goes here
+    global continue_video_feed  # Use global flag
+
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
     mp_hands = mp.solutions.hands
@@ -35,7 +39,7 @@ def gen_frames():
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5) as hands:
 
-        while cam.isOpened():
+        while cam.isOpened() and continue_video_feed:  # Check flag and camera status
             success, image = cam.read()
 
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -90,6 +94,12 @@ def gen_frames():
 @app.route('/video_feed')
 def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/stop_video_feed')
+def stop_video_feed():
+    global continue_video_feed  # Use global flag
+    continue_video_feed = False  # Stop video feed
+    return 'Video feed stopped'
 
 if __name__ == '__main__':
     app.run(debug=True)
