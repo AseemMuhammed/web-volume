@@ -54,7 +54,8 @@
                         repellendus amet.</h1>
                 </div>
                 <div>
-                    <button style="text-color: white" >Volume Control</button>
+                    <a href="#" id="startBtn" target="_blank">Start</a>
+    <a href="#" id="stopBtn" target="_blank">Stop</a>
                 </div>
                 <div class="img">
                     <img src="" alt="">
@@ -170,5 +171,33 @@
         </section>
     </footer>
 </body>
+
+<script>
+    // Function to send fetch request to start the video feed
+    document.getElementById('startBtn').addEventListener('click', function() {
+        fetch('/video_feed')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to start video feed');
+                }
+                return response.text();
+            })
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+    });
+
+    // Function to send fetch request to stop the video feed
+    document.getElementById('stopBtn').addEventListener('click', function() {
+        fetch('/stop_video_feed')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to stop video feed');
+                }
+                return response.text();
+            })
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+    });
+</script>
 
 </html>
