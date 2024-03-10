@@ -14,8 +14,11 @@ app = Flask(__name__)
 # Global variables for volume control process
 volume_control_process = None
 volume_control_queue = None
+stop_generate_frames = False  # Flag to indicate whether to stop generating frames
 
 def volume_control(queue):
+    global stop_generate_frames
+
     # Volume Control Logic
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
@@ -37,7 +40,7 @@ def volume_control(queue):
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5) as hands:
 
-        while True:
+        while not stop_generate_frames:  # Check flag to determine whether to continue generating frames
             success, image = cam.read()
 
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -94,9 +97,10 @@ def index():
 
 @app.route('/video_feed')
 def video_feed():
-    global volume_control_process, volume_control_queue
+    global volume_control_process, volume_control_queue, stop_generate_frames
 
     if volume_control_process is None or not volume_control_process.is_alive():
+        stop_generate_frames = False  # Reset flag
         volume_control_queue = Queue()
         volume_control_process = Process(target=volume_control, args=(volume_control_queue,))
         volume_control_process.start()
@@ -108,6 +112,13 @@ def video_feed():
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/stop_video_feed')
+def stop_video_feed():
+    global stop_generate_frames
+
+    stop_generate_frames = True  # Set flag to stop generating frames
+    return 'Video feed stopped'
 
 if __name__ == '__main__':
     app.run(debug=True)
