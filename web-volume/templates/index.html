@@ -56,6 +56,8 @@
                 <div>
                     <a href="#" id="startBtn" target="_blank">Start</a>
     <a href="#" id="stopBtn" target="_blank">Stop</a>
+
+    <div id="videoContainer" style="width: 640px; height: 480px;"></div>
                 </div>
                 <div class="img">
                     <img src="" alt="">
@@ -171,31 +173,61 @@
         </section>
     </footer>
 </body>
-
 <script>
-    // Function to send fetch request to start the video feed
+    // Function to display video frames
+    function displayVideoFrame(frameData) {
+        const videoContainer = document.getElementById('videoContainer');
+        const img = document.createElement('img');
+        img.src = `data:image/jpeg;base64, ${frameData}`;
+        videoContainer.innerHTML = '';
+        videoContainer.appendChild(img);
+    }
+
+    // Event listener for starting the video feed
     document.getElementById('startBtn').addEventListener('click', function() {
         fetch('/video_feed')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to start video feed');
                 }
-                return response.text();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let frameData = '';
+
+                // Read data stream
+                reader.read().then(function processText({ done, value }) {
+                    if (done) {
+                        return;
+                    }
+
+                    // Append received data to frameData
+                    frameData += decoder.decode(value, { stream: true });
+
+                    // Extract individual frames
+                    const frameSeparator = '\r\n\r\n';
+                    let frameIndex = frameData.indexOf(frameSeparator);
+                    while (frameIndex !== -1) {
+                        const frame = frameData.substring(0, frameIndex);
+                        displayVideoFrame(frame);
+                        frameData = frameData.substring(frameIndex + frameSeparator.length);
+                        frameIndex = frameData.indexOf(frameSeparator);
+                    }
+
+                    // Read next chunk of data
+                    return reader.read().then(processText);
+                });
             })
-            .then(data => console.log(data))
             .catch(error => console.error('Error:', error));
     });
 
-    // Function to send fetch request to stop the video feed
+    // Event listener for stopping the video feed
     document.getElementById('stopBtn').addEventListener('click', function() {
         fetch('/stop_video_feed')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Failed to stop video feed');
                 }
-                return response.text();
             })
-            .then(data => console.log(data))
             .catch(error => console.error('Error:', error));
     });
 </script>

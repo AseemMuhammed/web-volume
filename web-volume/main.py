@@ -8,6 +8,7 @@ import numpy as np
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+import time 
 
 app = Flask(__name__)
 
@@ -88,6 +89,8 @@ def volume_control(queue):
             ret, buffer = cv2.imencode('.jpg', image)
             frame = buffer.tobytes()
             queue.put(frame)
+
+            time.sleep(0.01)
 
     cam.release()
 
